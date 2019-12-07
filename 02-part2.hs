@@ -1,4 +1,4 @@
-main = readFile "02-input.txt" >>= putStrLn . show . runProgram 0 . restore (12, 2) . map read . split
+main = readFile "02-input.txt" >>= findInputs . map read . split
 
 valid :: Char -> Bool
 valid c = c >= '0' && c <= '9'
@@ -39,3 +39,15 @@ runProgram i p =
         dst = p !! (i + 3)
       in
         runProgram (i + 4) (setValue value dst p)
+
+findInputs :: [Int] -> IO ()
+findInputs p =
+  let
+    inputs = [(noun, verb) | noun <- [0..99], verb <- [0..99]]
+    check input = runProgram 0 (restore input p) == 19690720
+    results = filter check inputs
+    (noun, verb) = head results
+  in
+    putStrLn ("noun = " ++ show noun) >>
+    putStrLn ("verb = " ++ show verb) >>
+    putStrLn ("100 * noun + verb = " ++ show (100 * noun + verb))
