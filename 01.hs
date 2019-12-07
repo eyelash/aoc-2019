@@ -1,4 +1,4 @@
-main = fmap lines (readFile "01-input.txt") >>= putStrLn . show . processLines
+main = readFile "01-input.txt" >>= (putStrLn . show . processLines . lines)
 
 processLines :: [String] -> Integer
 processLines (line : rest) = computeFuel (read line) + processLines rest
