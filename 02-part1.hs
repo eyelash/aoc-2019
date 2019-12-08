@@ -33,9 +33,9 @@ runProgram i p =
       p !! 0
     else
       let
-        op1 = p !! (p !! (i + 1))
-        op2 = p !! (p !! (i + 2))
-        value = getOp opcode op1 op2
+        arg1 = p !! (p !! (i + 1))
+        arg2 = p !! (p !! (i + 2))
+        value = getOp opcode arg1 arg2
         dst = p !! (i + 3)
       in
         runProgram (i + 4) (setValue value dst p)
