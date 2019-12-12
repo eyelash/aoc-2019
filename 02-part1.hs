@@ -1,17 +1,6 @@
-main = readFile "02-input.txt" >>= putStrLn . show . runProgram 0 . restore (12, 2) . map read . split
+import Data.Text (pack, strip, splitOn, unpack)
 
-valid :: Char -> Bool
-valid c = c >= '0' && c <= '9'
-
-split :: String -> [String]
-split [] = []
-split s =
-  let
-    s'     = dropWhile (not . valid) s
-    first  = takeWhile valid s'
-    second = dropWhile valid s'
-  in
-    if first == [] then [] else first : split second
+main = readFile "02-input.txt" >>= putStrLn . show . runProgram 0 . restore (12, 2) . map (read . unpack) . splitOn (pack ",") . strip . pack
 
 setValue :: a -> Int -> [a] -> [a]
 setValue value 0 (x:xs) = value : xs
