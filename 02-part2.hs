@@ -1,42 +1,44 @@
 import Data.Text (pack, strip, splitOn, unpack)
+import Data.Array.Unboxed
+import Data.Array.IO
+import Control.Monad (when, forM_)
 
-main = readFile "02-input.txt" >>= findInputs . map (read . unpack) . splitOn (pack ",") . strip . pack
+main = readFile "02-input.txt" >>= findInputs . parseInput
 
-setValue :: a -> Int -> [a] -> [a]
-setValue value 0 (x:xs) = value : xs
-setValue value i (x:xs) = x : setValue value (i - 1) xs
+parseInput :: String -> UArray Int Int
+parseInput = createArray. map (read . unpack) . splitOn (pack ",") . strip . pack
 
-restore :: (Int, Int) -> [Int] -> [Int]
-restore (noun, verb) p = setValue verb 2 (setValue noun 1 p)
+createArray :: [Int] -> UArray Int Int
+createArray l = listArray (0, length l - 1) l
+
+restore :: (Int, Int) -> IOUArray Int Int -> IO ()
+restore (noun, verb) p = writeArray p 1 noun >> writeArray p 2 verb
 
 getOp :: Int -> Int -> Int -> Int
 getOp 1 = (+)
 getOp 2 = (*)
 
-runProgram :: Int -> [Int] -> Int
-runProgram i p =
-  let
-    opcode = p !! i
-  in
-    if opcode == 99 then
-      p !! 0
-    else
-      let
-        arg1 = p !! (p !! (i + 1))
-        arg2 = p !! (p !! (i + 2))
-        value = getOp opcode arg1 arg2
-        dst = p !! (i + 3)
-      in
-        runProgram (i + 4) (setValue value dst p)
+runProgram :: Int -> IOUArray Int Int -> IO Int
+runProgram i p = do
+  opcode <- readArray p i
+  if opcode == 99
+    then
+      readArray p 0
+    else do
+      arg1 <- readArray p (i + 1) >>= readArray p
+      arg2 <- readArray p (i + 2) >>= readArray p
+      dst <- readArray p (i + 3)
+      writeArray p dst (getOp opcode arg1 arg2)
+      runProgram (i + 4) p
 
-findInputs :: [Int] -> IO ()
-findInputs p =
-  let
-    inputs = [(noun, verb) | noun <- [0..99], verb <- [0..99]]
-    check input = runProgram 0 (restore input p) == 19690720
-    results = filter check inputs
-    (noun, verb) = head results
-  in
-    putStrLn ("noun = " ++ show noun) >>
-    putStrLn ("verb = " ++ show verb) >>
-    putStrLn ("100 * noun + verb = " ++ show (100 * noun + verb))
+findInputs :: UArray Int Int -> IO ()
+findInputs p' =
+  forM_ [0..99] $ \noun ->
+    forM_ [0..99] $ \verb -> do
+      p <- thaw p'
+      restore (noun, verb) p
+      result <- runProgram 0 p
+      when (result == 19690720) $ do
+        putStrLn ("noun = " ++ show noun)
+        putStrLn ("verb = " ++ show verb)
+        putStrLn ("100 * noun + verb = " ++ show (100 * noun + verb))

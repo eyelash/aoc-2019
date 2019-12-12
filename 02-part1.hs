@@ -1,30 +1,36 @@
 import Data.Text (pack, strip, splitOn, unpack)
+import Data.Array.Unboxed
+import Data.Array.IO
 
-main = readFile "02-input.txt" >>= putStrLn . show . runProgram 0 . restore (12, 2) . map (read . unpack) . splitOn (pack ",") . strip . pack
+main = do
+  input <- readFile "02-input.txt"
+  p <- thaw (parseInput input)
+  restore (12, 2) p
+  result <- runProgram 0 p
+  putStrLn (show result)
 
-setValue :: a -> Int -> [a] -> [a]
-setValue value 0 (x:xs) = value : xs
-setValue value i (x:xs) = x : setValue value (i - 1) xs
+parseInput :: String -> UArray Int Int
+parseInput = createArray. map (read . unpack) . splitOn (pack ",") . strip . pack
 
-restore :: (Int, Int) -> [Int] -> [Int]
-restore (noun, verb) p = setValue verb 2 (setValue noun 1 p)
+createArray :: [Int] -> UArray Int Int
+createArray l = listArray (0, length l - 1) l
+
+restore :: (Int, Int) -> IOUArray Int Int -> IO ()
+restore (noun, verb) p = writeArray p 1 noun >> writeArray p 2 verb
 
 getOp :: Int -> Int -> Int -> Int
 getOp 1 = (+)
 getOp 2 = (*)
 
-runProgram :: Int -> [Int] -> Int
-runProgram i p =
-  let
-    opcode = p !! i
-  in
-    if opcode == 99 then
-      p !! 0
-    else
-      let
-        arg1 = p !! (p !! (i + 1))
-        arg2 = p !! (p !! (i + 2))
-        value = getOp opcode arg1 arg2
-        dst = p !! (i + 3)
-      in
-        runProgram (i + 4) (setValue value dst p)
+runProgram :: Int -> IOUArray Int Int -> IO Int
+runProgram i p = do
+  opcode <- readArray p i
+  if opcode == 99
+    then
+      readArray p 0
+    else do
+      arg1 <- readArray p (i + 1) >>= readArray p
+      arg2 <- readArray p (i + 2) >>= readArray p
+      dst <- readArray p (i + 3)
+      writeArray p dst (getOp opcode arg1 arg2)
+      runProgram (i + 4) p

@@ -21,9 +21,8 @@ fn run_program(mut p: Vec<i32>, noun: i32, verb: i32) -> i32 {
     let opcode = p[i];
     let arg1 = p[p[i+1] as usize];
     let arg2 = p[p[i+2] as usize];
-    let value = get_op(opcode)(arg1, arg2);
     let dst = p[i+3] as usize;
-    p[dst] = value;
+    p[dst] = get_op(opcode)(arg1, arg2);
     i += 4;
   }
   p[0]
