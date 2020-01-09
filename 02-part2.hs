@@ -1,37 +1,38 @@
 import Data.Text (pack, strip, splitOn, unpack)
-import Data.Array.Unboxed
-import Data.Array.IO
+import Data.Vector.Unboxed (Vector, fromList, thaw)
+import Data.Vector.Unboxed.Mutable (IOVector)
+import qualified Data.Vector.Unboxed.Mutable (read, write)
 import Control.Monad (when, forM_)
+
+readVector = Data.Vector.Unboxed.Mutable.read
+writeVector = Data.Vector.Unboxed.Mutable.write
 
 main = readFile "02-input.txt" >>= findInputs . parseInput
 
-parseInput :: String -> UArray Int Int
-parseInput = createArray. map (read . unpack) . splitOn (pack ",") . strip . pack
+parseInput :: String -> Vector Int
+parseInput = fromList . map (read . unpack) . splitOn (pack ",") . strip . pack
 
-createArray :: [Int] -> UArray Int Int
-createArray l = listArray (0, length l - 1) l
-
-restore :: (Int, Int) -> IOUArray Int Int -> IO ()
-restore (noun, verb) p = writeArray p 1 noun >> writeArray p 2 verb
+restore :: (Int, Int) -> IOVector Int -> IO ()
+restore (noun, verb) p = writeVector p 1 noun >> writeVector p 2 verb
 
 getOp :: Int -> Int -> Int -> Int
 getOp 1 = (+)
 getOp 2 = (*)
 
-runProgram :: Int -> IOUArray Int Int -> IO Int
+runProgram :: Int -> IOVector Int -> IO Int
 runProgram i p = do
-  opcode <- readArray p i
+  opcode <- readVector p i
   if opcode == 99
     then
-      readArray p 0
+      readVector p 0
     else do
-      arg1 <- readArray p (i + 1) >>= readArray p
-      arg2 <- readArray p (i + 2) >>= readArray p
-      dst <- readArray p (i + 3)
-      writeArray p dst (getOp opcode arg1 arg2)
+      arg1 <- readVector p (i + 1) >>= readVector p
+      arg2 <- readVector p (i + 2) >>= readVector p
+      dst <- readVector p (i + 3)
+      writeVector p dst (getOp opcode arg1 arg2)
       runProgram (i + 4) p
 
-findInputs :: UArray Int Int -> IO ()
+findInputs :: Vector Int -> IO ()
 findInputs p' =
   forM_ [0..99] $ \noun ->
     forM_ [0..99] $ \verb -> do
