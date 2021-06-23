@@ -4,6 +4,12 @@ fn main() {
 	find_inputs(p);
 }
 
+fn restore(mut p: Vec<i32>, noun: i32, verb: i32) -> Vec<i32> {
+	p[1] = noun;
+	p[2] = verb;
+	p
+}
+
 fn get_op(opcode: i32) -> fn(i32, i32) -> i32 {
 	use std::ops::{ Add, Mul };
 	match opcode {
@@ -13,9 +19,7 @@ fn get_op(opcode: i32) -> fn(i32, i32) -> i32 {
 	}
 }
 
-fn run_program(mut p: Vec<i32>, noun: i32, verb: i32) -> i32 {
-	p[1] = noun;
-	p[2] = verb;
+fn run_program(mut p: Vec<i32>) -> i32 {
 	let mut i = 0;
 	while p[i] != 99 {
 		let opcode = p[i];
@@ -31,11 +35,12 @@ fn run_program(mut p: Vec<i32>, noun: i32, verb: i32) -> i32 {
 fn find_inputs(p: Vec<i32>) {
 	for noun in 0..=99 {
 		for verb in 0..=99 {
-			if run_program(p.clone(), noun, verb) == 19690720 {
+			let result = run_program(restore(p.clone(), noun, verb));
+			if result == 19690720 {
 				println!("noun = {}", noun);
 				println!("verb = {}", verb);
 				println!("100 * noun + verb = {}", 100 * noun + verb);
-				break;
+				return;
 			}
 		}
 	}
